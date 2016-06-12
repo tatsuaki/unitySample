@@ -1,14 +1,18 @@
 using UnityEngine;
 using System.Collections;
-using UnityEngine.UI;	// uGUIの機能を使うお約束
+using UnityEngine.UI;	// uGUIの機能使用時
 using NS_ScenarioData;
 
+/**
+ *  Scenarioコントローラー
+ */
 public class ScenarioController : MonoBehaviour {
-
+	public GameObject obj;
 	string[] NEXT    = new string[]{"<NEXT>"};
 	const string EFFECT  = "<EFFECT:";
+	const string FIRST   = "<FIRST>";
 
-	public string[] scenarioData; // シナリオを格納する
+	public string[] scenarioData;
 	[SerializeField] public Text uiMessageText; // uiTextへの参照を保つ
 	[SerializeField] public Text uiEffectInfoText; // uiTextへの参照を保つ
 	private int scenarioLength;
@@ -26,6 +30,7 @@ public class ScenarioController : MonoBehaviour {
     // Alpha増減値(点滅スピード調整)
     private float _Step = 0.1f;
 	private bool isEffect = false;
+	private bool isFirst  = false;
 
 	// 文字の表示が完了しているかどうか
 	public bool IsCompleteDisplayText 
@@ -42,7 +47,7 @@ public class ScenarioController : MonoBehaviour {
 		string datas = ScenarioData.data1;
 		scenarioData = datas.Split(NEXT, 200, System.StringSplitOptions.None);
 		scenarioLength = scenarioData.Length;
-		SetNextLine();
+		SetNextScriptLine();
 	}
 
 	public void PanelClicked () 
@@ -53,58 +58,66 @@ public class ScenarioController : MonoBehaviour {
 	void Update () 
 	{
 	//	Debug.Log("Update");
-		// 文字の表示が完了してるならクリック時に次の行を表示する
 		if (null == currentText) {
 			return;
 		}
 
+		// 文字表示が完了時
 		if( IsCompleteDisplayText ){
 			if(currentLine < scenarioLength && Input.GetMouseButtonDown(0)){
-		//	if(currentLine < scenarios.Length && textClick()){
-				SetNextLine();
+				SetNextScriptLine();
 			}
-		}else{
-		// 完了してないなら文字をすべて表示する
+		} else {
+			// 文字表示未完了時文字をすべて表示
 			if(Input.GetMouseButtonDown(0)){
 				timeUntilDisplay = 0;
 			}
 		}
-
 		int displayCharacterCount = (int)(Mathf.Clamp01((Time.time - timeElapsed) / timeUntilDisplay) * currentText.Length);
+	//	Debug.Log("Update displayCharacterCount = " + displayCharacterCount);
 		if( displayCharacterCount != lastUpdateCharacter ){
 			uiMessageText.text = currentText.Substring(0, displayCharacterCount);
 			lastUpdateCharacter = displayCharacterCount;
 		}
 
-		if (isEffect)
-		{
+		if (isEffect) {
 			EffectFlashing();
 		} else {
 			ClearEffect();
 		}
-			
 	}
 
-	void SetNextLine()
-	{
+	void SetNextScriptLine() {
 		string current = scenarioData[currentLine];
-		Debug.Log("SetNextLine = " + current);
+		//	Debug.Log("SetNextScriptLine = " + current);
+		ClearEffect();
+
 		// <EFFECT:000>
-		if(0 == current.IndexOf(EFFECT)){
+		if(0 == current.IndexOf(EFFECT)) {
 			string effectNum = current.Substring(8, 3);
 			Debug.Log("effectNum = " + effectNum);
 			uiEffectInfoText.text = effectNum;
 			currentText = current.Substring(12);
 
 			isEffect = true;
+		// <FIRST>
+		} else if (0 == current.IndexOf(FIRST)) {
+			uiEffectInfoText.text = FIRST;
+			currentText = current.Substring(FIRST.Length);
+			uiMessageText.text = currentText;
+			isFirst = true;
+
+			// プレハブを取得
+			GameObject prefab = (GameObject)Resources.Load ("Prefabs/FT_ExplosioMaster_Explosion01");
+			// プレハブからインスタンスを生成
+			Instantiate (prefab, obj.transform.position, Quaternion.identity);
 		} else {
 			uiEffectInfoText.text = "NONE";
 			currentText = current;
-
-			isEffect = false;
-			//一致しなかった
 		}
+
 		timeUntilDisplay = currentText.Length * intervalForCharacterDisplay;
+		Debug.Log("SetNextScriptLine timeUntilDisplay = " + timeUntilDisplay);
 		timeElapsed = Time.time;
 		currentLine ++;
 		if (currentLine >= scenarioLength) {
@@ -116,6 +129,7 @@ public class ScenarioController : MonoBehaviour {
 	void ClearEffect() 
 	{
 		isEffect = false;
+		isFirst  = false;
 		this.effect_panel.GetComponent<Image>().color = new Color(255, 0, 0, 0);
 	}
 
@@ -124,7 +138,7 @@ public class ScenarioController : MonoBehaviour {
 	 */
 	void EffectFlashing() 
 	{
-		Debug.Log("Flashing");
+	//	Debug.Log("Flashing");
 		if (null == this.effect_panel) 
 		{
 			return;
