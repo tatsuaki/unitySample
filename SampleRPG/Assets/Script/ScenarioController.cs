@@ -3,6 +3,8 @@ using System.Collections;
 using UnityEngine.UI;	// uGUIの機能使用時
 using NS_ScenarioData;
 
+using UnityEngine.SceneManagement;
+
 /**
  *  Scenarioコントローラー
  */
@@ -11,6 +13,9 @@ public class ScenarioController : MonoBehaviour {
 	string[] NEXT    = new string[]{"<NEXT>"};
 	const string EFFECT  = "<EFFECT:";
 	const string FIRST   = "<FIRST>";
+	
+	[SerializeField] Camera _camera = null;
+	[SerializeField] public ParticleSystem tapEffect;              // タップエフェクト
 
 	public string[] scenarioData;
 	[SerializeField] public Text uiMessageText; // uiTextへの参照を保つ
@@ -30,7 +35,6 @@ public class ScenarioController : MonoBehaviour {
     // Alpha増減値(点滅スピード調整)
     private float _Step = 0.1f;
 	private bool isEffect = false;
-	private bool isFirst  = false;
 
 	// 文字の表示が完了しているかどうか
 	public bool IsCompleteDisplayText 
@@ -57,6 +61,10 @@ public class ScenarioController : MonoBehaviour {
 
 	void Update () 
 	{
+
+	//	Vector3 screenPos = Input.mousePosition;
+	//	Vector3 worldPos = Camera.main.ScreenToWorldPoint(screenPos);
+	//	Debug.Log ("worldPos." + worldPos.x);
 	//	Debug.Log("Update");
 		if (null == currentText) {
 			return;
@@ -85,6 +93,20 @@ public class ScenarioController : MonoBehaviour {
 		} else {
 			ClearEffect();
 		}
+		if(Input.GetMouseButtonUp(0)){
+			//ここで処理
+			// Vector3 screenPos = Input.mousePosition;
+			Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition + _camera.transform.forward);
+			// Vector3 worldPos = Camera.main.ScreenToWorldPoint(screenPos);
+			Debug.Log ("Input.mousePosition." + Input.mousePosition.ToString());
+			Debug.Log ("worldPos_camera.transform.forward" + _camera.transform.forward.ToString());
+			Debug.Log ("worldPos." + pos.ToString());
+
+			//	var pos = _camera.ScreenToWorldPoint(Input.mousePosition + _camera.transform.forward * 10);
+			// pos = _camera.ScreenToWorldPoint(Input.mousePosition);
+			tapEffect.transform.position = pos;
+			tapEffect.Emit(1);
+		}
 	}
 
 	void SetNextScriptLine() {
@@ -105,7 +127,6 @@ public class ScenarioController : MonoBehaviour {
 			uiEffectInfoText.text = FIRST;
 			currentText = current.Substring(FIRST.Length);
 			uiMessageText.text = currentText;
-			isFirst = true;
 
 			// プレハブを取得
 			GameObject prefab = (GameObject)Resources.Load ("Prefabs/FT_ExplosioMaster_Explosion01");
@@ -129,7 +150,6 @@ public class ScenarioController : MonoBehaviour {
 	void ClearEffect() 
 	{
 		isEffect = false;
-		isFirst  = false;
 		this.effect_panel.GetComponent<Image>().color = new Color(255, 0, 0, 0);
 	}
 
